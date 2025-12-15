@@ -1,0 +1,197 @@
+{
+  "meta": {
+    "tileSize": 16,
+    "edgeCharsPerSide": 3,
+    "encoding": "filename baseId encodes edges clockwise N-E-S-W, 3 chars each (12 total). Trailing digits are variants.",
+    "tileCount": 17
+  },
+  "tiles": [
+    {
+      "id": "DDDDDDDDDDDD",
+      "baseId": "DDDDDDDDDDDD",
+      "file": "tiles/DDDDDDDDDDDD.png",
+      "edges": {
+        "n": "DDD",
+        "e": "DDD",
+        "s": "DDD",
+        "w": "DDD"
+      }
+    },
+    {
+      "id": "DDDDDDGDDDDG",
+      "baseId": "DDDDDDGDDDDG",
+      "file": "tiles/DDDDDDGDDDDG.png",
+      "edges": {
+        "n": "DDD",
+        "e": "DDD",
+        "s": "GDD",
+        "w": "DDG"
+      }
+    },
+    {
+      "id": "DDDDDGDDGDDD",
+      "baseId": "DDDDDGDDGDDD",
+      "file": "tiles/DDDDDGDDGDDD.png",
+      "edges": {
+        "n": "DDD",
+        "e": "DDG",
+        "s": "DDG",
+        "w": "DDD"
+      }
+    },
+    {
+      "id": "DDDDDGGGGDDG",
+      "baseId": "DDDDDGGGGDDG",
+      "file": "tiles/DDDDDGGGGDDG.png",
+      "edges": {
+        "n": "DDD",
+        "e": "DDG",
+        "s": "GGG",
+        "w": "DDG"
+      }
+    },
+    {
+      "id": "DDGGDDDDDDDD",
+      "baseId": "DDGGDDDDDDDD",
+      "file": "tiles/DDGGDDDDDDDD.png",
+      "edges": {
+        "n": "DDG",
+        "e": "GDD",
+        "s": "DDD",
+        "w": "DDD"
+      }
+    },
+    {
+      "id": "DDGGGGDDGDDD",
+      "baseId": "DDGGGGDDGDDD",
+      "file": "tiles/DDGGGGDDGDDD.png",
+      "edges": {
+        "n": "DDG",
+        "e": "GGG",
+        "s": "DDG",
+        "w": "DDD"
+      }
+    },
+    {
+      "id": "DDGGGGGGGDDG",
+      "baseId": "DDGGGGGGGDDG",
+      "file": "tiles/DDGGGGGGGDDG.png",
+      "edges": {
+        "n": "DDG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "DDG"
+      }
+    },
+    {
+      "id": "GDDDDDDDDGDD",
+      "baseId": "GDDDDDDDDGDD",
+      "file": "tiles/GDDDDDDDDGDD.png",
+      "edges": {
+        "n": "GDD",
+        "e": "DDD",
+        "s": "DDD",
+        "w": "GDD"
+      }
+    },
+    {
+      "id": "GDDDDDGDDGGG",
+      "baseId": "GDDDDDGDDGGG",
+      "file": "tiles/GDDDDDGDDGGG.png",
+      "edges": {
+        "n": "GDD",
+        "e": "DDD",
+        "s": "GDD",
+        "w": "GGG"
+      }
+    },
+    {
+      "id": "GDDDDGGGGGGG",
+      "baseId": "GDDDDGGGGGGG",
+      "file": "tiles/GDDDDGGGGGGG.png",
+      "edges": {
+        "n": "GDD",
+        "e": "DDG",
+        "s": "GGG",
+        "w": "GGG"
+      }
+    },
+    {
+      "id": "GGGGDDDDDGDD",
+      "baseId": "GGGGDDDDDGDD",
+      "file": "tiles/GGGGDDDDDGDD.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GDD",
+        "s": "DDD",
+        "w": "GDD"
+      }
+    },
+    {
+      "id": "GGGGDDGDDGGG",
+      "baseId": "GGGGDDGDDGGG",
+      "file": "tiles/GGGGDDGDDGGG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GDD",
+        "s": "GDD",
+        "w": "GGG"
+      }
+    },
+    {
+      "id": "GGGGGGDDGGDD",
+      "baseId": "GGGGGGDDGGDD",
+      "file": "tiles/GGGGGGDDGGDD.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "DDG",
+        "w": "GDD"
+      }
+    },
+    {
+      "id": "GGGGGGGGGGGG",
+      "baseId": "GGGGGGGGGGGG",
+      "file": "tiles/GGGGGGGGGGGG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GGG"
+      }
+    },
+    {
+      "id": "GGGGGGGGGGGG2",
+      "baseId": "GGGGGGGGGGGG",
+      "file": "tiles/GGGGGGGGGGGG2.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GGG"
+      }
+    },
+    {
+      "id": "GGGGGGGGGGGG3",
+      "baseId": "GGGGGGGGGGGG",
+      "file": "tiles/GGGGGGGGGGGG3.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GGG"
+      }
+    },
+    {
+      "id": "GGGGGGGGGGGG4",
+      "baseId": "GGGGGGGGGGGG",
+      "file": "tiles/GGGGGGGGGGGG4.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GGG"
+      }
+    }
+  ]
+}
