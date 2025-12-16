@@ -33,7 +33,7 @@ function stripExt(name: string) {
  *  GGGDDDGDDGDD10
  */
 function splitVariant(id: string): { baseId: string; variantSuffix: string } {
-  const m = id.match(/^([DG]{12})(\d+)?$/i);
+  const m = id.match(/^([DGR]{12})(\d+)?$/i);
   if (!m) {
     throw new Error(
       `Invalid tile id "${id}". Expected 12 chars of D/G, optionally followed by digits (e.g. GGGDDDGDDGDD2).`

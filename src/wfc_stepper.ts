@@ -39,7 +39,7 @@ function mulberry32(seed: number): RNG {
     t += 0x6d2b79f5;
     let x = Math.imul(t ^ (t >>> 15), 1 | t);
     x ^= x + Math.imul(x ^ (x >>> 7), 61 | x);
-    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    return ((x ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
@@ -282,15 +282,20 @@ function buildCompat(tiles: Variant[]) {
   return { compat, words };
 }
 
-function unionCompatForCell(
+/**
+ * Allocation-free: writes union(compatDir[tile]) for all tiles in `cell` domain into `out`.
+ */
+function unionCompatForCellInto(
+  out: Uint32Array,
   domain: Uint32Array,
   cell: number,
   words: number,
   compatDir: Uint32Array[]
 ) {
-  const out = new Uint32Array(words);
-  const base = cell * words;
+  // reset out
+  for (let k = 0; k < words; k++) out[k] = 0;
 
+  const base = cell * words;
   for (let w = 0; w < words; w++) {
     let bits = domain[base + w];
     while (bits !== 0) {
@@ -301,7 +306,6 @@ function unionCompatForCell(
       for (let k = 0; k < words; k++) out[k] |= cm[k];
     }
   }
-  return out;
 }
 
 function findMinEntropyCell(
@@ -399,6 +403,12 @@ export class WfcStepper {
   private domain: Uint32Array;
   private queue: number[] = [];
 
+  // prevent duplicate queue entries
+  private inQueue: Uint8Array;
+
+  // NEW: reusable buffer for allowed-neighbor bitset
+  private allowedScratch: Uint32Array;
+
   // stats
   collapsed = 0;
 
@@ -426,6 +436,9 @@ export class WfcStepper {
 
     this.rng = mulberry32(opts.seed >>> 0);
     this.domain = new Uint32Array(this.cells * this.words);
+
+    this.inQueue = new Uint8Array(this.cells);
+    this.allowedScratch = new Uint32Array(this.words);
 
     const m = opts.macroGrass;
     this.macro =
@@ -456,6 +469,13 @@ export class WfcStepper {
     }
 
     this.resetDomain();
+  }
+
+  // deduped enqueue
+  private enqueue(cell: number) {
+    if (this.inQueue[cell]) return;
+    this.inQueue[cell] = 1;
+    this.queue.push(cell);
   }
 
   private applyMacroGrassBias() {
@@ -515,7 +535,8 @@ export class WfcStepper {
             this.words,
             mask
           );
-          if (changed) this.queue.push(cell); // kick propagation from seeded cells
+
+          if (changed) this.enqueue(cell);
         }
       }
     }
@@ -524,10 +545,12 @@ export class WfcStepper {
   private resetDomain() {
     for (let c = 0; c < this.cells; c++) setAll(this.domain, c, this.words);
     maskUnusedHighBits(this.domain, this.cells, this.words, this.tiles.length);
+
     this.queue.length = 0;
+    this.inQueue.fill(0);
     this.collapsed = 0;
 
-    // Macro bias seeding (also enqueues cells so constraints propagate)
+    // Macro bias seeding
     this.applyMacroGrassBias();
   }
 
@@ -564,6 +587,8 @@ export class WfcStepper {
       let propBudget = maxPropagations;
       while (this.queue.length > 0 && propBudget-- > 0) {
         const cell = this.queue.pop()!;
+        this.inQueue[cell] = 0; // allow it to be re-enqueued later if needed
+
         const x = cell % this.gridW;
         const y = (cell / this.gridW) | 0;
 
@@ -571,17 +596,20 @@ export class WfcStepper {
           const nb = neighborIndex(x, y, this.gridW, this.gridH, d);
           if (nb < 0) continue;
 
-          const allowed = unionCompatForCell(
+          // ALLOCATION-FREE: compute allowed into reusable scratch
+          unionCompatForCellInto(
+            this.allowedScratch,
             this.domain,
             cell,
             this.words,
             this.compat[d]
           );
+
           const changed = domainAndInPlace(
             this.domain,
             nb,
             this.words,
-            allowed
+            this.allowedScratch
           );
 
           if (changed) {
@@ -602,7 +630,7 @@ export class WfcStepper {
               return events;
             }
 
-            this.queue.push(nb);
+            this.enqueue(nb);
           }
         }
       }
@@ -635,7 +663,7 @@ export class WfcStepper {
       events.push({ type: "collapse", cell, tile: chosen });
 
       // start propagation from this collapsed cell
-      this.queue.push(cell);
+      this.enqueue(cell);
     }
 
     return events;
