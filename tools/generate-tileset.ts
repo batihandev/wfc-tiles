@@ -2,10 +2,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 type TileDef = {
-  id: string; // unique (includes variant suffix)
-  baseId: string; // exactly 12 chars (no suffix)
-  file: string; // "tiles/xxx.png"
+  id: string;
+  baseId: string;
+  file: string;
   edges: { n: string; e: string; s: string; w: string };
+  weight?: number; // NEW
 };
 
 type Tileset = {
@@ -79,6 +80,7 @@ function main() {
       baseId,
       file: path.posix.join("tiles", filename),
       edges,
+      weight: 1, // NEW default
     };
   });
 

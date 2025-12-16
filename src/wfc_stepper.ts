@@ -4,6 +4,7 @@ export type TileDef = {
   baseId: string;
   file: string;
   edges: { n: string; e: string; s: string; w: string };
+  weight?: number; // default 1
 };
 
 export type Variant = TileDef & { rot: 0 | 1 | 2 | 3 };
@@ -12,6 +13,22 @@ export type WfcStepperOptions = {
   seed: number;
   allowRotate?: boolean;
   maxRestarts?: number;
+
+  // Macro bias: seed 3–4 big grass regions before WFC
+  macroGrass?: {
+    enabled?: boolean;
+
+    // If omitted: auto (3 for small maps, 4 for larger)
+    continents?: number;
+
+    // Radius range as fraction of min(gridW, gridH)
+    radiusMinFrac?: number; // default 0.14
+    radiusMaxFrac?: number; // default 0.22
+
+    // Thresholds on G-count in baseId (12 chars total)
+    coreMinG?: number; // default 10 (very grassy)
+    rimMinG?: number; // default 8  (moderately grassy)
+  };
 };
 
 type RNG = () => number;
@@ -178,6 +195,64 @@ function pickTileFromDomain(
   return options[(rng() * options.length) | 0];
 }
 
+function pickTileFromDomainWeighted(
+  domain: Uint32Array,
+  cell: number,
+  words: number,
+  tiles: Variant[],
+  rng: RNG
+) {
+  const base = cell * words;
+
+  // First pass: compute total weight of available tiles
+  let total = 0;
+  for (let w = 0; w < words; w++) {
+    let bits = domain[base + w];
+    while (bits !== 0) {
+      const bit = popLowestBitIndex(bits);
+      bits &= bits - 1;
+      const idx = w * 32 + bit;
+
+      const wt = tiles[idx]?.weight ?? 1;
+      if (Number.isFinite(wt) && wt > 0) total += wt;
+    }
+  }
+
+  // Fallback: if everything is 0-weight, revert to uniform
+  if (!(total > 0)) {
+    return pickTileFromDomain(domain, cell, words, rng);
+  }
+
+  // Second pass: roll and select
+  let r = rng() * total;
+  for (let w = 0; w < words; w++) {
+    let bits = domain[base + w];
+    while (bits !== 0) {
+      const bit = popLowestBitIndex(bits);
+      bits &= bits - 1;
+      const idx = w * 32 + bit;
+
+      const wt = tiles[idx]?.weight ?? 1;
+      if (!(Number.isFinite(wt) && wt > 0)) continue;
+
+      r -= wt;
+      if (r <= 0) return idx;
+    }
+  }
+
+  // Numerical edge case: return last valid tile found
+  for (let w = words - 1; w >= 0; w--) {
+    let bits = domain[base + w];
+    while (bits !== 0) {
+      const bit = popLowestBitIndex(bits);
+      bits &= bits - 1;
+      return w * 32 + bit;
+    }
+  }
+
+  return -1;
+}
+
 // compat[dir][tile] -> bitset of tiles that can be neighbor in that direction
 function buildCompat(tiles: Variant[]) {
   const n = tiles.length;
@@ -253,6 +328,52 @@ function findMinEntropyCell(
   return bestCell;
 }
 
+// ---------- Macro grass bias helpers ----------
+function countChar(s: string, ch: string) {
+  let n = 0;
+  for (let i = 0; i < s.length; i++) if (s[i] === ch) n++;
+  return n;
+}
+
+function buildMaskForMinG(tiles: Variant[], words: number, minG: number) {
+  const mask = new Uint32Array(words);
+  for (let i = 0; i < tiles.length; i++) {
+    const baseId = (tiles[i].baseId ?? "").toUpperCase();
+    const g = countChar(baseId, "G");
+    if (g >= minG) {
+      mask[i >>> 5] |= 1 << (i & 31);
+    }
+  }
+  return mask;
+}
+
+// Intersect cell domain with mask, but refuse if it would become empty.
+function intersectCellWithMask(
+  domain: Uint32Array,
+  cell: number,
+  words: number,
+  mask: Uint32Array
+) {
+  const base = cell * words;
+
+  // check emptiness without mutating
+  let any = 0;
+  for (let w = 0; w < words; w++) any |= domain[base + w] & mask[w];
+  if (any === 0) return false;
+
+  // apply
+  let changed = false;
+  for (let w = 0; w < words; w++) {
+    const prev = domain[base + w];
+    const next = prev & mask[w];
+    if (next !== prev) {
+      domain[base + w] = next;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 export type WfcEvent =
   | { type: "collapse"; cell: number; tile: number }
   | { type: "propagate"; cell: number } // a neighbor cell changed
@@ -281,6 +402,11 @@ export class WfcStepper {
   // stats
   collapsed = 0;
 
+  // macro bias config & masks
+  private macro?: Required<NonNullable<WfcStepperOptions["macroGrass"]>>;
+  private coreGrassMask?: Uint32Array;
+  private rimGrassMask?: Uint32Array;
+
   constructor(
     baseTiles: TileDef[],
     gridW: number,
@@ -300,7 +426,99 @@ export class WfcStepper {
 
     this.rng = mulberry32(opts.seed >>> 0);
     this.domain = new Uint32Array(this.cells * this.words);
+
+    const m = opts.macroGrass;
+    this.macro =
+      m?.enabled === false
+        ? undefined
+        : {
+            enabled: m?.enabled ?? true,
+            continents:
+              m?.continents ??
+              (this.cells >= 128 * 128 ? 4 : this.cells >= 64 * 64 ? 3 : 2),
+            radiusMinFrac: m?.radiusMinFrac ?? 0.14,
+            radiusMaxFrac: m?.radiusMaxFrac ?? 0.22,
+            coreMinG: m?.coreMinG ?? 10,
+            rimMinG: m?.rimMinG ?? 8,
+          };
+
+    if (this.macro?.enabled) {
+      this.coreGrassMask = buildMaskForMinG(
+        this.tiles,
+        this.words,
+        this.macro.coreMinG
+      );
+      this.rimGrassMask = buildMaskForMinG(
+        this.tiles,
+        this.words,
+        this.macro.rimMinG
+      );
+    }
+
     this.resetDomain();
+  }
+
+  private applyMacroGrassBias() {
+    if (!this.macro?.enabled) return;
+    if (!this.coreGrassMask || !this.rimGrassMask) return;
+
+    // Ensure rim mask has something
+    let rimAny = 0;
+    let coreAny = 0;
+    for (let w = 0; w < this.words; w++) {
+      rimAny |= this.rimGrassMask[w];
+      coreAny |= this.coreGrassMask[w];
+    }
+    if (rimAny === 0) return;
+
+    const minDim = Math.min(this.gridW, this.gridH);
+
+    const k = Math.max(1, this.macro.continents | 0);
+    const rMin = Math.max(2, Math.floor(minDim * this.macro.radiusMinFrac));
+    const rMax = Math.max(
+      rMin + 1,
+      Math.floor(minDim * this.macro.radiusMaxFrac)
+    );
+
+    for (let i = 0; i < k; i++) {
+      const cx = (this.rng() * this.gridW) | 0;
+      const cy = (this.rng() * this.gridH) | 0;
+      const r = rMin + ((this.rng() * (rMax - rMin + 1)) | 0);
+
+      const r2 = r * r;
+      const coreR = Math.max(1, Math.floor(r * 0.85));
+      const core2 = coreR * coreR;
+
+      const x0 = Math.max(0, cx - r);
+      const x1 = Math.min(this.gridW - 1, cx + r);
+      const y0 = Math.max(0, cy - r);
+      const y1 = Math.min(this.gridH - 1, cy + r);
+
+      for (let y = y0; y <= y1; y++) {
+        const dy = y - cy;
+        for (let x = x0; x <= x1; x++) {
+          const dx = x - cx;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > r2) continue;
+
+          const cell = y * this.gridW + x;
+
+          // Core = stricter mask (if available), rim = looser mask
+          const mask =
+            d2 <= core2 && coreAny !== 0
+              ? this.coreGrassMask
+              : this.rimGrassMask;
+
+          const changed = intersectCellWithMask(
+            this.domain,
+            cell,
+            this.words,
+            mask
+          );
+          if (changed) this.queue.push(cell); // kick propagation from seeded cells
+        }
+      }
+    }
   }
 
   private resetDomain() {
@@ -308,6 +526,9 @@ export class WfcStepper {
     maskUnusedHighBits(this.domain, this.cells, this.words, this.tiles.length);
     this.queue.length = 0;
     this.collapsed = 0;
+
+    // Macro bias seeding (also enqueues cells so constraints propagate)
+    this.applyMacroGrassBias();
   }
 
   // Expose entropy for visualization (count of possible tiles)
@@ -321,9 +542,11 @@ export class WfcStepper {
       ? getSingleIndex(this.domain, cell, this.words)
       : -1;
   }
+
   get queueSize() {
     return this.queue.length;
   }
+
   // Produce final result (only valid after done)
   buildResult(): Uint16Array {
     const out = new Uint16Array(this.cells);
@@ -360,8 +583,10 @@ export class WfcStepper {
             this.words,
             allowed
           );
+
           if (changed) {
             events.push({ type: "propagate", cell: nb });
+
             if (domainIsEmpty(this.domain, nb, this.words)) {
               // contradiction -> restart
               this.attempt++;
@@ -376,6 +601,7 @@ export class WfcStepper {
               events.push({ type: "restart", attempt: this.attempt });
               return events;
             }
+
             this.queue.push(nb);
           }
         }
@@ -395,12 +621,14 @@ export class WfcStepper {
         return events;
       }
 
-      const chosen = pickTileFromDomain(
+      const chosen = pickTileFromDomainWeighted(
         this.domain,
         cell,
         this.words,
+        this.tiles,
         this.rng
       );
+
       restrictToTile(this.domain, cell, this.words, chosen);
       this.collapsed++;
 

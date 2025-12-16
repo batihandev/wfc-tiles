@@ -3,7 +3,7 @@
     "tileSize": 16,
     "edgeCharsPerSide": 3,
     "encoding": "filename baseId encodes edges clockwise N-E-S-W, 3 chars each (12 total). Trailing digits are variants.",
-    "tileCount": 17
+    "tileCount": 27
   },
   "tiles": [
     {
@@ -15,7 +15,8 @@
         "e": "DDD",
         "s": "DDD",
         "w": "DDD"
-      }
+      },
+      "weight": 1
     },
     {
       "id": "DDDDDDGDDDDG",
@@ -26,7 +27,8 @@
         "e": "DDD",
         "s": "GDD",
         "w": "DDG"
-      }
+      },
+      "weight": 0.2
     },
     {
       "id": "DDDDDGDDGDDD",
@@ -37,7 +39,8 @@
         "e": "DDG",
         "s": "DDG",
         "w": "DDD"
-      }
+      },
+      "weight": 0.2
     },
     {
       "id": "DDDDDGGGGDDG",
@@ -48,7 +51,20 @@
         "e": "DDG",
         "s": "GGG",
         "w": "DDG"
-      }
+      },
+      "weight": 0.3
+    },
+    {
+      "id": "DDDDGGGGGDGG",
+      "baseId": "DDDDGGGGGDGG",
+      "file": "tiles/DDDDGGGGGDGG.png",
+      "edges": {
+        "n": "DDD",
+        "e": "DGG",
+        "s": "GGG",
+        "w": "DGG"
+      },
+      "weight": 0.3
     },
     {
       "id": "DDGGDDDDDDDD",
@@ -59,7 +75,8 @@
         "e": "GDD",
         "s": "DDD",
         "w": "DDD"
-      }
+      },
+      "weight": 0.2
     },
     {
       "id": "DDGGGGDDGDDD",
@@ -70,7 +87,8 @@
         "e": "GGG",
         "s": "DDG",
         "w": "DDD"
-      }
+      },
+      "weight": 0.4
     },
     {
       "id": "DDGGGGGGGDDG",
@@ -81,7 +99,20 @@
         "e": "GGG",
         "s": "GGG",
         "w": "DDG"
-      }
+      },
+      "weight": 1
+    },
+    {
+      "id": "DGGGGGDGGDDD",
+      "baseId": "DGGGGGDGGDDD",
+      "file": "tiles/DGGGGGDGGDDD.png",
+      "edges": {
+        "n": "DGG",
+        "e": "GGG",
+        "s": "DGG",
+        "w": "DDD"
+      },
+      "weight": 1
     },
     {
       "id": "GDDDDDDDDGDD",
@@ -92,7 +123,8 @@
         "e": "DDD",
         "s": "DDD",
         "w": "GDD"
-      }
+      },
+      "weight": 0.3
     },
     {
       "id": "GDDDDDGDDGGG",
@@ -103,7 +135,8 @@
         "e": "DDD",
         "s": "GDD",
         "w": "GGG"
-      }
+      },
+      "weight": 0.4
     },
     {
       "id": "GDDDDGGGGGGG",
@@ -114,7 +147,44 @@
         "e": "DDG",
         "s": "GGG",
         "w": "GGG"
-      }
+      },
+      "weight": 1
+    },
+    {
+      "id": "GDGGGGGDGGGG",
+      "baseId": "GDGGGGGDGGGG",
+      "file": "tiles/GDGGGGGDGGGG.png",
+      "edges": {
+        "n": "GDG",
+        "e": "GGG",
+        "s": "GDG",
+        "w": "GGG"
+      },
+      "weight": 0.01
+    },
+    {
+      "id": "GDGGGGGGGGGG",
+      "baseId": "GDGGGGGGGGGG",
+      "file": "tiles/GDGGGGGGGGGG.png",
+      "edges": {
+        "n": "GDG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GGG"
+      },
+      "weight": 0.01
+    },
+    {
+      "id": "GGDDDDGGDGGG",
+      "baseId": "GGDDDDGGDGGG",
+      "file": "tiles/GGDDDDGGDGGG.png",
+      "edges": {
+        "n": "GGD",
+        "e": "DDD",
+        "s": "GGD",
+        "w": "GGG"
+      },
+      "weight": 20
     },
     {
       "id": "GGGGDDDDDGDD",
@@ -125,7 +195,8 @@
         "e": "GDD",
         "s": "DDD",
         "w": "GDD"
-      }
+      },
+      "weight": 0.5
     },
     {
       "id": "GGGGDDGDDGGG",
@@ -136,7 +207,44 @@
         "e": "GDD",
         "s": "GDD",
         "w": "GGG"
-      }
+      },
+      "weight": 1
+    },
+    {
+      "id": "GGGGDGGGGGDG",
+      "baseId": "GGGGDGGGGGDG",
+      "file": "tiles/GGGGDGGGGGDG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GDG",
+        "s": "GGG",
+        "w": "GDG"
+      },
+      "weight": 0.1
+    },
+    {
+      "id": "GGGGDGGGGGGG",
+      "baseId": "GGGGDGGGGGGG",
+      "file": "tiles/GGGGDGGGGGGG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GDG",
+        "s": "GGG",
+        "w": "GGG"
+      },
+      "weight": 0.1
+    },
+    {
+      "id": "GGGGGDDDDGGD",
+      "baseId": "GGGGGDDDDGGD",
+      "file": "tiles/GGGGGDDDDGGD.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGD",
+        "s": "DDD",
+        "w": "GGD"
+      },
+      "weight": 1
     },
     {
       "id": "GGGGGGDDGGDD",
@@ -147,7 +255,32 @@
         "e": "GGG",
         "s": "DDG",
         "w": "GDD"
-      }
+      },
+      "weight": 1
+    },
+    {
+      "id": "GGGGGGGDGGGG",
+      "baseId": "GGGGGGGDGGGG",
+      "file": "tiles/GGGGGGGDGGGG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GDG",
+        "w": "GGG"
+      },
+      "weight": 0.1
+    },
+    {
+      "id": "GGGGGGGGGGDG",
+      "baseId": "GGGGGGGGGGDG",
+      "file": "tiles/GGGGGGGGGGDG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GDG"
+      },
+      "weight": 0.1
     },
     {
       "id": "GGGGGGGGGGGG",
@@ -158,7 +291,8 @@
         "e": "GGG",
         "s": "GGG",
         "w": "GGG"
-      }
+      },
+      "weight": 10
     },
     {
       "id": "GGGGGGGGGGGG2",
@@ -169,7 +303,8 @@
         "e": "GGG",
         "s": "GGG",
         "w": "GGG"
-      }
+      },
+      "weight": 1
     },
     {
       "id": "GGGGGGGGGGGG3",
@@ -180,7 +315,8 @@
         "e": "GGG",
         "s": "GGG",
         "w": "GGG"
-      }
+      },
+      "weight": 1
     },
     {
       "id": "GGGGGGGGGGGG4",
@@ -191,7 +327,8 @@
         "e": "GGG",
         "s": "GGG",
         "w": "GGG"
-      }
+      },
+      "weight": 1
     }
   ]
 }

@@ -34,7 +34,7 @@ async function main() {
   const TILE = tileset.meta.tileSize ?? 16;
 
   // You can start smaller (e.g. 256x256) while debugging
-  const WORLD_PX = 500;
+  const WORLD_PX = 8000;
   const gridW = Math.floor(WORLD_PX / TILE); // 500
   const gridH = Math.floor(WORLD_PX / TILE); // 500
 
@@ -414,6 +414,7 @@ async function main() {
     seed,
     allowRotate: false,
     maxRestarts: 40,
+    macroGrass: { enabled: true }, // you can tune later
   });
 
   function clearAllChunks() {
