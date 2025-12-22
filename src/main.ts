@@ -8,6 +8,45 @@ import {
   Texture,
 } from "pixi.js";
 import { WfcStepper, type TileDef } from "./wfc_stepper";
+// Bit flags for edges
+const N = 1,
+  E = 2,
+  S = 4,
+  W = 8;
+
+type RoadMask = number;
+
+// "Is this edge a road edge?"
+function isRoadEdge(code: string): boolean {
+  return code === "RRR";
+}
+
+// Compute a bitmask of which sides are road on this variant
+function roadMaskForVariant(v: {
+  edges: { n: string; e: string; s: string; w: string };
+}): RoadMask {
+  let mask = 0;
+  if (isRoadEdge(v.edges.n)) mask |= N;
+  if (isRoadEdge(v.edges.e)) mask |= E;
+  if (isRoadEdge(v.edges.s)) mask |= S;
+  if (isRoadEdge(v.edges.w)) mask |= W;
+  return mask;
+}
+
+function isCornerMask(mask: RoadMask): boolean {
+  // 2 perpendicular bits set
+  return (
+    mask === (N | E) || mask === (E | S) || mask === (S | W) || mask === (W | N)
+  );
+}
+
+function isStraightVMask(mask: RoadMask): boolean {
+  return mask === (N | S);
+}
+
+function isStraightHMask(mask: RoadMask): boolean {
+  return mask === (E | W);
+}
 
 type Tileset = {
   meta: { tileSize: number; tileCount: number };
@@ -24,6 +63,70 @@ function clamp(v: number, lo: number, hi: number) {
 
 function chunkKey(cx: number, cy: number) {
   return `${cx},${cy}`;
+}
+
+function smoothRoads(
+  stepper: WfcStepper,
+  grid: Uint16Array,
+  roadMasks: RoadMask[],
+  pickStraightH: () => number,
+  pickStraightV: () => number
+): Uint16Array {
+  const w = stepper.gridW;
+  const h = stepper.gridH;
+  const out = grid.slice(); // copy
+
+  const idx = (x: number, y: number) => y * w + x;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = idx(x, y);
+      const tileIndex = out[i];
+      const mask = roadMasks[tileIndex];
+
+      if (!isCornerMask(mask)) continue; // only care about corners
+
+      // Look at neighbors to see if we're in a tight zig-zag
+      let scoreV = 0;
+      let scoreH = 0;
+
+      // Up/down: would prefer vertical straight (N|S)
+      if (y > 0) {
+        const t = out[idx(x, y - 1)];
+        const m = roadMasks[t];
+        if (m & S) scoreV++; // neighbor has road going down to us
+      }
+      if (y + 1 < h) {
+        const t = out[idx(x, y + 1)];
+        const m = roadMasks[t];
+        if (m & N) scoreV++;
+      }
+
+      // Left/right: would prefer horizontal straight (E|W)
+      if (x > 0) {
+        const t = out[idx(x - 1, y)];
+        const m = roadMasks[t];
+        if (m & E) scoreH++;
+      }
+      if (x + 1 < w) {
+        const t = out[idx(x + 1, y)];
+        const m = roadMasks[t];
+        if (m & W) scoreH++;
+      }
+
+      // If both neighbors vertically want connection, and it's as strong or
+      // stronger than horizontal, straighten vertically.
+      if (scoreV >= 2 && scoreV >= scoreH) {
+        const repl = pickStraightV();
+        if (repl >= 0) out[i] = repl;
+      } else if (scoreH >= 2 && scoreH > scoreV) {
+        const repl = pickStraightH();
+        if (repl >= 0) out[i] = repl;
+      }
+    }
+  }
+
+  return out;
 }
 
 async function main() {
@@ -416,6 +519,30 @@ async function main() {
     maxRestarts: 40,
     macroGrass: { enabled: false }, // you can tune later
   });
+  // --- road metadata for second pass ---
+  const roadMasks: RoadMask[] = stepper.tiles.map((v) => roadMaskForVariant(v));
+
+  // indices of straight road variants (we may have several from rotation)
+  const straightHIndices: number[] = [];
+  const straightVIndices: number[] = [];
+
+  for (let i = 0; i < stepper.tiles.length; i++) {
+    const m = roadMasks[i];
+    if (isStraightHMask(m)) straightHIndices.push(i);
+    if (isStraightVMask(m)) straightVIndices.push(i);
+  }
+
+  function pickStraightH(): number {
+    if (!straightHIndices.length) return -1;
+    const idx = (Math.random() * straightHIndices.length) | 0;
+    return straightHIndices[idx];
+  }
+
+  function pickStraightV(): number {
+    if (!straightVIndices.length) return -1;
+    const idx = (Math.random() * straightVIndices.length) | 0;
+    return straightVIndices[idx];
+  }
 
   function clearAllChunks() {
     for (const { rt } of chunkSprites.values()) {
@@ -485,8 +612,25 @@ async function main() {
           paused = true;
           btnPause.textContent = "Done";
           console.log("WFC complete");
-          drawAllResolvedTiles(stepper);
-          // Optional: finalize rendering (see Fix 2)
+
+          // 1) get the final raw grid
+          const rawGrid = stepper.buildResult();
+
+          // 2) smooth road network
+          const smoothed = smoothRoads(
+            stepper,
+            rawGrid,
+            roadMasks,
+            pickStraightH,
+            pickStraightV
+          );
+
+          // 3) clear and redraw from smoothed grid
+          clearAllChunks();
+          for (let cell = 0; cell < smoothed.length; cell++) {
+            const tileIdx = smoothed[cell];
+            if (tileIdx >= 0) drawCollapsedTile(stepper, cell, tileIdx);
+          }
         } else if (ev.type === "error") {
           paused = true;
           btnPause.textContent = "Error";
