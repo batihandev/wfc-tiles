@@ -1,0 +1,310 @@
+{
+  "meta": {
+    "tileSize": 16,
+    "edgeCharsPerSide": 3,
+    "encoding": "filename baseId encodes edges clockwise N-E-S-W, 3 chars each (12 total). Trailing digits are variants. Weights derived from G/D counts in baseId.",
+    "tileCount": 25
+  },
+  "tiles": [
+    {
+      "id": "DDDDDDDDDDDD",
+      "baseId": "DDDDDDDDDDDD",
+      "file": "tiles/DDDDDDDDDDDD.png",
+      "edges": {
+        "n": "DDD",
+        "e": "DDD",
+        "s": "DDD",
+        "w": "DDD"
+      },
+      "weight": 0.002
+    },
+    {
+      "id": "DDDDDDGDDDDG",
+      "baseId": "DDDDDDGDDDDG",
+      "file": "tiles/DDDDDDGDDDDG.png",
+      "edges": {
+        "n": "DDD",
+        "e": "DDD",
+        "s": "GDD",
+        "w": "DDG"
+      },
+      "weight": 0.2
+    },
+    {
+      "id": "DDDDDGDDGDDD",
+      "baseId": "DDDDDGDDGDDD",
+      "file": "tiles/DDDDDGDDGDDD.png",
+      "edges": {
+        "n": "DDD",
+        "e": "DDG",
+        "s": "DDG",
+        "w": "DDD"
+      },
+      "weight": 0.2
+    },
+    {
+      "id": "DDDDDGGGGDDG",
+      "baseId": "DDDDDGGGGDDG",
+      "file": "tiles/DDDDDGGGGDDG.png",
+      "edges": {
+        "n": "DDD",
+        "e": "DDG",
+        "s": "GGG",
+        "w": "DDG"
+      },
+      "weight": 0.424
+    },
+    {
+      "id": "DDGGDDDDDDDD",
+      "baseId": "DDGGDDDDDDDD",
+      "file": "tiles/DDGGDDDDDDDD.png",
+      "edges": {
+        "n": "DDG",
+        "e": "GDD",
+        "s": "DDD",
+        "w": "DDD"
+      },
+      "weight": 0.2
+    },
+    {
+      "id": "DDGGGGDDGDDD",
+      "baseId": "DDGGGGDDGDDD",
+      "file": "tiles/DDGGGGDDGDDD.png",
+      "edges": {
+        "n": "DDG",
+        "e": "GGG",
+        "s": "DDG",
+        "w": "DDD"
+      },
+      "weight": 0.424
+    },
+    {
+      "id": "DDGGGGGGGDDG",
+      "baseId": "DDGGGGGGGDDG",
+      "file": "tiles/DDGGGGGGGDDG.png",
+      "edges": {
+        "n": "DDG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "DDG"
+      },
+      "weight": 0.895
+    },
+    {
+      "id": "GDDDDDDDDGDD",
+      "baseId": "GDDDDDDDDGDD",
+      "file": "tiles/GDDDDDDDDGDD.png",
+      "edges": {
+        "n": "GDD",
+        "e": "DDD",
+        "s": "DDD",
+        "w": "GDD"
+      },
+      "weight": 0.2
+    },
+    {
+      "id": "GDDDDDGDDGGG",
+      "baseId": "GDDDDDGDDGGG",
+      "file": "tiles/GDDDDDGDDGGG.png",
+      "edges": {
+        "n": "GDD",
+        "e": "DDD",
+        "s": "GDD",
+        "w": "GGG"
+      },
+      "weight": 0.424
+    },
+    {
+      "id": "GDDDDGGGGGGG",
+      "baseId": "GDDDDGGGGGGG",
+      "file": "tiles/GDDDDGGGGGGG.png",
+      "edges": {
+        "n": "GDD",
+        "e": "DDG",
+        "s": "GGG",
+        "w": "GGG"
+      },
+      "weight": 0.895
+    },
+    {
+      "id": "GGGGDDDDDGDD",
+      "baseId": "GGGGDDDDDGDD",
+      "file": "tiles/GGGGDDDDDGDD.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GDD",
+        "s": "DDD",
+        "w": "GDD"
+      },
+      "weight": 0.424
+    },
+    {
+      "id": "GGGGDDGDDGGG",
+      "baseId": "GGGGDDGDDGGG",
+      "file": "tiles/GGGGDDGDDGGG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GDD",
+        "s": "GDD",
+        "w": "GGG"
+      },
+      "weight": 0.895
+    },
+    {
+      "id": "GGGGGGDDGGDD",
+      "baseId": "GGGGGGDDGGDD",
+      "file": "tiles/GGGGGGDDGGDD.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "DDG",
+        "w": "GDD"
+      },
+      "weight": 0.895
+    },
+    {
+      "id": "GGGGGGGGGGGG",
+      "baseId": "GGGGGGGGGGGG",
+      "file": "tiles/GGGGGGGGGGGG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GGG"
+      },
+      "weight": 4.6
+    },
+    {
+      "id": "GGGGGGGGGGGG2",
+      "baseId": "GGGGGGGGGGGG",
+      "file": "tiles/GGGGGGGGGGGG2.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GGG"
+      },
+      "weight": 4.6
+    },
+    {
+      "id": "GGGGGGGGGGGG3",
+      "baseId": "GGGGGGGGGGGG",
+      "file": "tiles/GGGGGGGGGGGG3.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GGG"
+      },
+      "weight": 4.6
+    },
+    {
+      "id": "GGGGGGGGGRRR",
+      "baseId": "GGGGGGGGGRRR",
+      "file": "tiles/GGGGGGGGGRRR.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "RRR"
+      },
+      "weight": 0.326
+    },
+    {
+      "id": "GGGGGGRRRGGG",
+      "baseId": "GGGGGGRRRGGG",
+      "file": "tiles/GGGGGGRRRGGG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "RRR",
+        "w": "GGG"
+      },
+      "weight": 0.326
+    },
+    {
+      "id": "GGGGGGRRRRRR",
+      "baseId": "GGGGGGRRRRRR",
+      "file": "tiles/GGGGGGRRRRRR.png",
+      "edges": {
+        "n": "GGG",
+        "e": "GGG",
+        "s": "RRR",
+        "w": "RRR"
+      },
+      "weight": 0.483
+    },
+    {
+      "id": "GGGRRRGGGGGG",
+      "baseId": "GGGRRRGGGGGG",
+      "file": "tiles/GGGRRRGGGGGG.png",
+      "edges": {
+        "n": "GGG",
+        "e": "RRR",
+        "s": "GGG",
+        "w": "GGG"
+      },
+      "weight": 0.326
+    },
+    {
+      "id": "GGGRRRGGGRRR",
+      "baseId": "GGGRRRGGGRRR",
+      "file": "tiles/GGGRRRGGGRRR.png",
+      "edges": {
+        "n": "GGG",
+        "e": "RRR",
+        "s": "GGG",
+        "w": "RRR"
+      },
+      "weight": 0.483
+    },
+    {
+      "id": "RRRGGGGGGGGG",
+      "baseId": "RRRGGGGGGGGG",
+      "file": "tiles/RRRGGGGGGGGG.png",
+      "edges": {
+        "n": "RRR",
+        "e": "GGG",
+        "s": "GGG",
+        "w": "GGG"
+      },
+      "weight": 0.326
+    },
+    {
+      "id": "RRRGGGRRRGGG",
+      "baseId": "RRRGGGRRRGGG",
+      "file": "tiles/RRRGGGRRRGGG.png",
+      "edges": {
+        "n": "RRR",
+        "e": "GGG",
+        "s": "RRR",
+        "w": "GGG"
+      },
+      "weight": 0.483
+    },
+    {
+      "id": "RRRRRRGGGGGG",
+      "baseId": "RRRRRRGGGGGG",
+      "file": "tiles/RRRRRRGGGGGG.png",
+      "edges": {
+        "n": "RRR",
+        "e": "RRR",
+        "s": "GGG",
+        "w": "GGG"
+      },
+      "weight": 0.483
+    },
+    {
+      "id": "RRRRRRRRRRRR",
+      "baseId": "RRRRRRRRRRRR",
+      "file": "tiles/RRRRRRRRRRRR.png",
+      "edges": {
+        "n": "RRR",
+        "e": "RRR",
+        "s": "RRR",
+        "w": "RRR"
+      },
+      "weight": 0.002
+    }
+  ]
+}

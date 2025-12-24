@@ -79,11 +79,11 @@ function computeWeight(baseId: string): number {
   let w = 1;
 
   // Reward grass: each G increases weight a bit
-  w *= 1 + g * 0.15;
+  w *= 1 + g * 0.3;
 
-  w /= 1 + d * 0.2;
+  w /= 1 + d * 0.7;
 
-  w /= 1 + r * 0.4;
+  w /= 1 + r * 0.8;
 
   if (r === 3) {
     // Rare road ends.
@@ -91,10 +91,10 @@ function computeWeight(baseId: string): number {
   }
   if (r === 12) {
     // crossroads are super rare
-    w *= 0.1;
+    w *= 0.5;
   }
 
-  if (w < 0.2) w = 0.02;
+  if (w < 0.2) w = 0.002;
   if (w > 30) w = 60;
 
   // Optional: keep JSON small
