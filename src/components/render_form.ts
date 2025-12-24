@@ -66,7 +66,7 @@ export function renderTileForm(opts: {
   styleInput(tileW);
   tileW.oninput = () => {
     const v = Number(tileW.value);
-    draft.weight = Number.isFinite(v) && v > 0 ? v : undefined;
+    draft.weight = Number.isFinite(v) && v > 0 ? v : 1;
   };
 
   formHeader.appendChild(idInput);

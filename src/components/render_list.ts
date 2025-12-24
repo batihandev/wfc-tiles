@@ -7,7 +7,8 @@ import {
 } from "./dom";
 import { emptyTile, hasAnyEdges } from "./state";
 import type { TilesetEditorState } from "./state";
-
+import { validateTileset } from "./validate_tileset";
+import { DIRS } from "./types";
 const SKIP_STORAGE_KEY = "wfc_tileset_skip_v1";
 
 function loadSkipSet(): Set<string> {
@@ -42,15 +43,32 @@ export function renderList(opts: {
   const q = searchEl.value.trim().toLowerCase();
   const filtered = state.api.images.filter((f) => f.toLowerCase().includes(q));
 
+  const validation = validateTileset(state.api.tileset);
+  const deadEndKeys = new Set(
+    validation.errors
+      .map((err: any) => {
+        // Extract the keyword from the error string if possible,
+        // or modify your validator to return a structured list of keys.
+        const match = err.match(/Key "([^"]+)"/);
+        return match ? match[1] : null;
+      })
+      .filter(Boolean)
+  );
   // Sort:
-  // 0 = OK, 1 = TODO, 2 = SKIP (always last)
+  // 0 = ISSUE (Broken rules), 1 = TODO (No edges), 2 = OK (Has edges), 3 = SKIP (Later)
   const rank = (f: string) => {
-    const skipped = skipSet.has(f);
-    if (skipped) return 2;
+    const isSkipped = skipSet.has(f);
+    if (isSkipped) return 3;
 
     const t = state.byFile.get(f);
-    const ok = t && hasAnyEdges(t);
-    return ok ? 0 : 1;
+    if (!t || !hasAnyEdges(t)) return 1;
+
+    // Check if this specific tile uses a problematic key
+    const hasIssue = DIRS.some((dir) =>
+      t.edges[dir].some((r) => deadEndKeys.has(r.key))
+    );
+
+    return hasIssue ? 0 : 2;
   };
 
   filtered.sort((a, b) => {
@@ -65,7 +83,17 @@ export function renderList(opts: {
     const ok = existing && hasAnyEdges(existing);
     const skipped = skipSet.has(f);
 
+    const hasIssue =
+      existing &&
+      DIRS.some((dir) =>
+        existing.edges[dir].some((r) => deadEndKeys.has(r.key))
+      );
+
     const row = document.createElement("div");
+    styleRowSelectable(row, {
+      selected: f === state.selectedFile,
+      tone: hasIssue ? "danger" : "info", // Highlight background if issue exists
+    });
     row.style.display = "grid";
     row.style.gridTemplateColumns = "1fr auto auto auto";
     row.style.gap = "8px";
@@ -122,10 +150,12 @@ export function renderList(opts: {
       badge.textContent = "LATER";
       styleSmallPill(badge, "warn" as Tone);
       badge.style.opacity = "0.95";
+    } else if (hasIssue) {
+      badge.textContent = "ISSUE";
+      styleSmallPill(badge, "danger" as Tone); // Red badge for broken rules
     } else {
       badge.textContent = ok ? "OK" : "TODO";
       styleSmallPill(badge, (ok ? "ok" : "todo") as Tone);
-      badge.style.opacity = ok ? "0.95" : "0.7";
     }
 
     row.appendChild(name);

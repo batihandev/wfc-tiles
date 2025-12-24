@@ -1,12 +1,14 @@
-import { applyDarkBase, makeToast } from "./dom";
-import { createZoomModal } from "./zoom_modal";
-import type { ApiState } from "./types";
-import { rebuildIndex, emptyTile } from "./state";
-import type { TilesetEditorState } from "./state";
-import { renderList } from "./render_list";
-import { renderEditor } from "./render_editor";
-import type { TileV2, TilesetV2 } from "./types";
-import { buildKeywordIndex } from "./keyword_index";
+import { applyDarkBase, makeToast } from "../components/dom";
+import { createZoomModal } from "../components/zoom_modal";
+import type { ApiState } from "../components/types";
+import { rebuildIndex, emptyTile } from "../components/state";
+import type { TilesetEditorState } from "../components/state";
+import { renderList } from "../components/render_list";
+import { renderEditor } from "../components/render_editor";
+import type { TileV2, TilesetV2 } from "../components/types";
+import { buildKeywordIndex } from "../components/keyword_index";
+import { validateTileset } from "../components/validate_tileset";
+import { styleButton } from "../components/dom";
 
 async function fetchApiState(): Promise<ApiState> {
   const res = await fetch("/api/tileset");
@@ -43,7 +45,33 @@ export async function renderTilesetPage(root: HTMLElement) {
   root.appendChild(main);
 
   const header = document.createElement("div");
-  header.innerHTML = `<h2 style="margin:0 0 10px 0;">Tileset Editor</h2>`;
+  header.style.display = "flex";
+  header.style.justifyContent = "space-between";
+  header.style.alignItems = "center";
+  header.style.marginBottom = "10px";
+  header.innerHTML = `<h2 style="margin:0;">Tileset Editor</h2>`;
+
+  const validateBtn = document.createElement("button");
+  validateBtn.textContent = "Validate";
+  styleButton(validateBtn, "ghost");
+  validateBtn.style.padding = "4px 8px";
+  validateBtn.style.fontSize = "12px";
+
+  validateBtn.onclick = () => {
+    const result = validateTileset(state.api.tileset);
+    if (result.ok) {
+      toast.show("✅ Tileset is perfectly symmetrical!");
+    } else {
+      // Log to console for detailed reading, show alert for immediate feedback
+      console.error("Tileset Validation Failed:", result.errors);
+      alert(
+        `Found ${result.errors.length} symmetry issues. Check console for details.`
+      );
+      toast.show(`❌ ${result.errors.length} Issues Found`);
+    }
+  };
+
+  header.appendChild(validateBtn);
   left.appendChild(header);
 
   const search = document.createElement("input");
@@ -98,6 +126,10 @@ export async function renderTilesetPage(root: HTMLElement) {
   }
 
   const rerenderAll = () => {
+    const validation = validateTileset(state.api.tileset);
+    validateBtn.style.borderColor = validation.ok ? "" : "#ff4444";
+    validateBtn.textContent = validation.ok ? "Validate" : "⚠️ Issues";
+
     renderList({
       listEl: list,
       statusEl: status,

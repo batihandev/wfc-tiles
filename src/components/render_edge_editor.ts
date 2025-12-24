@@ -119,7 +119,7 @@ export function renderEdgeEditor(opts: {
   addBtn.style.padding = "6px 10px";
   addBtn.style.fontSize = "12px";
   addBtn.onclick = () => {
-    rules.push({ key: "", weight: undefined });
+    rules.push({ key: "", weight: 1 });
     onChange();
   };
 
@@ -271,7 +271,7 @@ export function renderEdgeEditor(opts: {
     styleInput(w);
     w.oninput = () => {
       const v = Number(w.value);
-      rules[i].weight = Number.isFinite(v) && v > 0 ? v : undefined;
+      rules[i].weight = Number.isFinite(v) && v > 0 ? v : 1;
     };
 
     const del = document.createElement("button");

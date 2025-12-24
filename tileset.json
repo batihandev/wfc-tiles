@@ -796,7 +796,7 @@
         ],
         "s": [
           {
-            "key": "roof-border-orange",
+            "key": "roof-orange-border",
             "weight": 1
           }
         ],
@@ -819,7 +819,7 @@
             "weight": 1
           },
           {
-            "key": "grass",
+            "key": "dirt",
             "weight": 1
           }
         ],
@@ -988,7 +988,7 @@
         ],
         "e": [
           {
-            "key": "roof-orange",
+            "key": "roof-orange-brickhomewall",
             "weight": 1
           }
         ],
@@ -2043,6 +2043,14 @@
         "n": [
           {
             "key": "brickstonewall",
+            "weight": 1
+          },
+          {
+            "key": "border-brickstonewall",
+            "weight": 1
+          },
+          {
+            "key": "brickstonewall-border",
             "weight": 1
           }
         ],

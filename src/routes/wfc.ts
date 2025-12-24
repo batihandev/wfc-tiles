@@ -1,44 +1,44 @@
-export function renderWfcRoute(root: HTMLElement) {
+import { loadTilesetAsTileDefs } from "../components/tileset_loader";
+import { createWfcView } from "../components/wfc_view";
+
+export async function renderWfcRoute(root: HTMLElement) {
   root.innerHTML = "";
 
-  const wrap = document.createElement("div");
-  wrap.style.border = "1px solid #232323";
-  wrap.style.borderRadius = "16px";
-  wrap.style.background = "#0f0f0f";
-  wrap.style.padding = "16px";
+  const header = document.createElement("div");
+  header.style.display = "flex";
+  header.style.alignItems = "baseline";
+  header.style.justifyContent = "space-between";
 
-  const h = document.createElement("h2");
-  h.textContent = "WFC Generator";
-  h.style.margin = "0 0 8px 0";
-  h.style.fontSize = "16px";
-  h.style.letterSpacing = "0.02em";
+  root.appendChild(header);
 
-  const p = document.createElement("p");
-  p.style.margin = "0 0 14px 0";
-  p.style.opacity = "0.8";
-  p.style.fontSize = "13px";
-  p.textContent =
-    "This page will host generation controls and preview output. Tileset is loaded from tileset.json via your dev API.";
+  const mount = document.createElement("div");
+  root.appendChild(mount);
 
-  const hint = document.createElement("div");
-  hint.style.border = "1px dashed #2f2f2f";
-  hint.style.borderRadius = "14px";
-  hint.style.padding = "12px";
-  hint.style.background = "#0b0b0b";
-  hint.style.fontSize = "12px";
-  hint.style.opacity = "0.85";
-  hint.innerHTML = `
-    <div style="font-weight:600; margin-bottom:6px;">Next steps</div>
-    <ul style="margin:0; padding-left:18px; line-height:1.55;">
-      <li>Load tileset + images list (same as Tileset Editor)</li>
-      <li>Define generator settings (grid size, seed, constraints)</li>
-      <li>Run WFC and render output grid (canvas or DOM)</li>
-      <li>Inspect contradictions / debug adjacency</li>
-    </ul>
-  `;
+  try {
+    const { tileSize, tileDefs } = await loadTilesetAsTileDefs();
 
-  wrap.appendChild(h);
-  wrap.appendChild(p);
-  wrap.appendChild(hint);
-  root.appendChild(wrap);
+    // Start conservative while you validate constraints.
+    // You can crank this later.
+    const WORLD_PX = 1000;
+    const gridW = Math.floor(WORLD_PX / tileSize);
+    const gridH = Math.floor(WORLD_PX / tileSize);
+
+    await createWfcView({
+      mountEl: mount,
+      tileSize,
+      tiles: tileDefs,
+      gridW,
+      gridH,
+      seed: 12345,
+    });
+  } catch (err: any) {
+    const pre = document.createElement("pre");
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.padding = "12px";
+    pre.style.border = "1px solid #232323";
+    pre.style.borderRadius = "12px";
+    pre.style.background = "#0f0f0f";
+    pre.textContent = String(err?.stack ?? err);
+    root.appendChild(pre);
+  }
 }
