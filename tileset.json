@@ -1742,31 +1742,15 @@
     {
       "id": "tile_0103",
       "file": "tiles/tile_0103.png",
-      "weight": 1,
+      "weight": 0.1,
       "edges": {
         "n": [
-          {
-            "key": "grass",
-            "weight": 1
-          },
-          {
-            "key": "dirt",
-            "weight": 1
-          },
           {
             "key": "stonewall",
             "weight": 1
           }
         ],
         "e": [
-          {
-            "key": "grass",
-            "weight": 1
-          },
-          {
-            "key": "dirt",
-            "weight": 1
-          },
           {
             "key": "stonewall",
             "weight": 1
@@ -1779,14 +1763,6 @@
           }
         ],
         "w": [
-          {
-            "key": "grass",
-            "weight": 1
-          },
-          {
-            "key": "dirt",
-            "weight": 1
-          },
           {
             "key": "stonewall",
             "weight": 1
@@ -1832,7 +1808,7 @@
     {
       "id": "tile_0109",
       "file": "tiles/tile_0109.png",
-      "weight": 1,
+      "weight": 0.1,
       "edges": {
         "n": [
           {
