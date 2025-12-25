@@ -420,7 +420,7 @@
         ],
         "e": [
           {
-            "key": "dirt",
+            "key": "gdd",
             "weight": 1
           }
         ],
@@ -2058,6 +2058,14 @@
           {
             "key": "brickstonewall",
             "weight": 1
+          },
+          {
+            "key": "grass",
+            "weight": 1
+          },
+          {
+            "key": "dirt",
+            "weight": 1
           }
         ],
         "s": [
@@ -2077,6 +2085,14 @@
         "w": [
           {
             "key": "brickstonewall",
+            "weight": 1
+          },
+          {
+            "key": "grass",
+            "weight": 1
+          },
+          {
+            "key": "dirt",
             "weight": 1
           }
         ]

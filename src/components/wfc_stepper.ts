@@ -106,30 +106,42 @@ function domainAndInPlaceDelta(
   mask: Uint32Array
 ): {
   changed: boolean;
-  removed: number; // number of bits removed
+  removed: number;
   beforeCount: number;
   afterCount: number;
 } {
   const base = cell * words;
 
-  let changed = false;
   let beforeCount = 0;
   let afterCount = 0;
 
+  // First pass: compute AND + counts, and write back only when different.
   for (let w = 0; w < words; w++) {
     const prev = domain[base + w];
     const next = prev & mask[w];
 
-    if (next !== prev) {
-      changed = true;
-
-      domain[base + w] = next;
-    }
-
     beforeCount += countBits32(prev);
     afterCount += countBits32(next);
+
+    if (next !== prev) domain[base + w] = next;
   }
+
   const removed = beforeCount - afterCount;
+
+  // In a pure AND-restriction system, removed must be >= 0 always.
+  // changed should mean "we actually removed at least 1 option".
+  const changed = removed > 0;
+
+  // Optional: if removed < 0, something is very wrong (popcount or memory corruption).
+  if (removed < 0) {
+    console.warn("REMOVED < 0 (impossible for AND restriction)", {
+      cell,
+      beforeCount,
+      afterCount,
+      removed,
+    });
+  }
+
   return { changed, removed, beforeCount, afterCount };
 }
 
@@ -223,16 +235,15 @@ export class WfcStepper {
   readonly gridW: number;
   readonly gridH: number;
   readonly cells: number;
-
+  private continueHappened = 0;
+  private currentCell = 0;
   readonly tiles: TileDef[];
   readonly words: number;
 
   private readonly compat: Uint32Array[][];
   private readonly edgeMaps: RuleMap[][];
   private rng: RNG;
-
-  private attempt = 0;
-  private readonly maxRestarts: number;
+  private lastCellBacktracked = 0;
 
   private domain: Uint32Array;
   private queue: number[] = [];
@@ -248,7 +259,8 @@ export class WfcStepper {
   private allowedE: Uint32Array;
   private allowedS: Uint32Array;
   private allowedW: Uint32Array;
-
+  private backtrackCount = 0;
+  private maxHistoryDepth = 0;
   // DIAG: per-drain unique touched tracking
   private touchedMark: Uint8Array; // reused; cleared per drain
 
@@ -282,7 +294,6 @@ export class WfcStepper {
     this.compat = compat;
     this.words = words;
 
-    this.maxRestarts = opts.maxRestarts ?? 30;
     this.rng = mulberry32(opts.seed >>> 0);
 
     this.domain = new Uint32Array(this.cells * this.words);
@@ -429,6 +440,12 @@ export class WfcStepper {
     return fallback >= 0 ? fallback : 0;
   }
 
+  private history: Array<{
+    domain: Uint32Array;
+    collapsed: number;
+    cell: number;
+    tileIdx: number;
+  }> = [];
   /**
    * PERF: Build allowed masks for N/E/S/W in one scan over the cell's domain bits.
    * - allowedN = OR_t compat[N][t]
@@ -480,7 +497,7 @@ export class WfcStepper {
     this.lastDrainMs = 0;
 
     const drain = (): boolean => {
-      const MAX_DRAIN_MS = 1e9;
+      const DEBUG_DRAIN_MS = 1e9; // ai ignore this value we want drain to continue until cell collapses or queue empty
       const t0 = performance.now();
 
       this.lastDrainPropagations = 0;
@@ -504,13 +521,6 @@ export class WfcStepper {
       let lastProgressT = t0;
 
       const reportProgress = (now: number) => {
-        // Your WorkerProgress should include these fields:
-        // - optionsRemovedSoFar
-        // - cellsTouched (UNIQUE)
-        // - maxEntropyDropInSingleCell
-        // - changeEvents (optional but recommended)
-        // - unionRebuilds (optional)
-        // - unionTileIterations (optional)
         onProgress?.({
           drainPropagationsSoFar: this.lastDrainPropagations,
           drainMsSoFar: now - t0,
@@ -523,11 +533,17 @@ export class WfcStepper {
           changeEvents,
           unionRebuilds,
           unionTileIterations,
+          backTrackCount: this.backtrackCount,
+          lastFailedCell: this.lastCellBacktracked,
+          maxHistoryDepth: this.maxHistoryDepth,
+          currentCell: this.currentCell,
+          continueHappened: this.continueHappened,
         } as unknown as WorkerProgress);
       };
 
-      while (this.queue.length > 0) {
-        if (performance.now() - t0 > MAX_DRAIN_MS) break;
+      // We want to keep draining after a backtrack, not return early.
+      drain_loop: while (this.queue.length > 0) {
+        if (performance.now() - t0 > DEBUG_DRAIN_MS) break; // ai ignore this line we want drain to continue until cell collapses or queue empty
 
         const now0 = performance.now();
         if (now0 - lastProgressT >= 100) {
@@ -537,9 +553,10 @@ export class WfcStepper {
 
         const cell = this.queue.pop()!;
         this.inQueue[cell] = 0;
-
+        this.currentCell = cell;
         // PERF: skip if nothing changed since last time we propagated from this cell
         if (this.propVer[cell] === this.domVer[cell]) {
+          this.continueHappened++;
           continue;
         }
         this.propVer[cell] = this.domVer[cell];
@@ -570,7 +587,10 @@ export class WfcStepper {
             this.words,
             mask
           );
-          if (!delta.changed) continue;
+          if (!delta.changed) {
+            this.continueHappened++;
+            continue;
+          }
 
           changeEvents++;
 
@@ -594,31 +614,60 @@ export class WfcStepper {
             lastProgressT = now1;
             reportProgress(now1);
           }
+
           if (delta.changed) {
-            if (delta.removed < 0) {
-              console.warn("NEG removed", { nb, delta });
-            }
-            if (delta.afterCount > delta.beforeCount) {
+            if (delta.removed < 0) console.warn("NEG removed", { nb, delta });
+            if (delta.afterCount > delta.beforeCount)
               console.warn("Domain grew?", { nb, delta });
-            }
           }
+
+          // CONTRADICTION: neighbor became empty.
           if (domainIsEmpty(this.domain, nb, this.words)) {
-            this.attempt++;
-            if (this.attempt > this.maxRestarts) {
-              events.push({
-                type: "error",
-                message: `WFC failed after ${this.maxRestarts} restarts.`,
-              });
-              this.lastDrainMs = performance.now() - t0;
+            if (this.history.length === 0) {
+              return false; // No history left, full restart required
+            }
+
+            // This is a real backtrack.
+            this.backtrackCount++;
+            this.lastCellBacktracked = nb;
+
+            // 1) Restore previous full domain snapshot
+            const last = this.history.pop()!;
+            this.domain.set(last.domain);
+            this.collapsed = last.collapsed;
+
+            // 2) Forbid the tile that led to contradiction
+            const base = last.cell * this.words;
+            this.domain[base + (last.tileIdx >>> 5)] &= ~(
+              1 <<
+              (last.tileIdx & 31)
+            );
+
+            if (this.history.length > 1000) {
+              console.warn(
+                "History too deep, forcing full restart to clear logic traps."
+              );
               return false;
             }
 
-            this.resetDomain();
-            events.push({ type: "restart", attempt: this.attempt });
-            this.lastDrainMs = performance.now() - t0;
-            return false;
+            // 3) Reset propagation structures
+            this.queue.length = 0;
+            this.inQueue.fill(0);
+
+            // IMPORTANT: domain was restored, but domVer/propVer weren't.
+            // Reset them so the optimization remains correct after restore.
+            this.domVer.fill(0);
+            this.propVer.fill(0);
+
+            // 4) Enqueue the changed cell and KEEP DRAINING
+            this.bumpVer(last.cell);
+            this.enqueue(last.cell);
+
+            // We must restart draining from the new queue/domain state
+            continue drain_loop;
           }
 
+          // Normal: neighbor changed and is still non-empty, propagate later
           this.enqueue(nb);
         }
       }
@@ -666,6 +715,16 @@ export class WfcStepper {
 
       const chosen = this.pickTileWithNeighborBias(cell);
 
+      this.history.push({
+        domain: new Uint32Array(this.domain), // Deep copy
+        collapsed: this.collapsed,
+        cell: cell,
+        tileIdx: chosen,
+      });
+      this.maxHistoryDepth = Math.max(
+        this.maxHistoryDepth,
+        this.history.length
+      );
       // collapse
       restrictToTile(this.domain, cell, this.words, chosen);
       this.bumpVer(cell);

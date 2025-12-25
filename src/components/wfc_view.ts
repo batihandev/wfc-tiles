@@ -129,6 +129,19 @@ export async function createWfcView(opts: WfcViewOpts): Promise<WfcView> {
       app.renderer.render({ container: empty, target: rt, clear: true });
     }
   }
+  function redrawFromSnapshot(snapshot: Int32Array) {
+    // 1) clear RTs + local bookkeeping
+    pendingDraws = [];
+    clearAllChunks();
+    resetEntropy();
+    collapsedGrid.set(snapshot);
+
+    // 2) draw everything that is collapsed
+    for (let cell = 0; cell < snapshot.length; cell++) {
+      const tileIdx = snapshot[cell];
+      if (tileIdx >= 0) drawCollapsedTile(cell, tileIdx);
+    }
+  }
 
   // Entropy overlay (cheap activity map)
   const entropyCanvas = document.createElement("canvas");
@@ -544,13 +557,18 @@ export async function createWfcView(opts: WfcViewOpts): Promise<WfcView> {
   let statVariants = tiles.length;
   let statQueue = 0;
   let statRemaining = 0;
-
+  let forceFlushDraw = false;
   let liveDrain = {
     drainPropagationsSoFar: 0,
     drainMsSoFar: 0,
     optionsRemovedSoFar: 0,
     cellsTouched: 0,
     maxEntropyDropInSingleCell: 0,
+    backTrackCount: 0,
+    lastFailedCell: 0,
+    maxHistoryDepth: 0,
+    currentCell: 0,
+    continueHappened: 0,
   };
 
   function applyMode(mode: UiMode) {
@@ -597,6 +615,14 @@ export async function createWfcView(opts: WfcViewOpts): Promise<WfcView> {
         }
         return;
       }
+      if (msg.type === "snapshot") {
+        // if dimensions mismatch, ignore or rebuild view; but yours should match
+        redrawFromSnapshot(msg.collapsedGrid);
+        // keep stats consistent
+        console.log("WFC snapshot received, collapsed:", msg.collapsed);
+        statCollapsed = msg.collapsed;
+        return;
+      }
 
       if (msg.type === "batch") {
         pendingDraws.push(...msg.collapsed);
@@ -637,6 +663,7 @@ export async function createWfcView(opts: WfcViewOpts): Promise<WfcView> {
 
       if (msg.type === "done") {
         applyMode("done");
+        forceFlushDraw = true;
         return;
       }
 
@@ -656,12 +683,15 @@ export async function createWfcView(opts: WfcViewOpts): Promise<WfcView> {
     wireWorker(w);
 
     const maxRestarts = 30;
+    const targetPerChunk = Number(import.meta.env.VITE_TARGET_PER_CHUNK) || 1;
+    console.log("WFC targetPerChunk:", targetPerChunk);
     w.postMessage({
       type: "init",
       tiles,
       gridW,
       gridH,
       opts: { seed: initSeed, maxRestarts },
+      targetPerChunk,
     });
 
     return w;
@@ -721,6 +751,11 @@ export async function createWfcView(opts: WfcViewOpts): Promise<WfcView> {
       optionsRemovedSoFar: 0,
       cellsTouched: 0,
       maxEntropyDropInSingleCell: 0,
+      backTrackCount: 0,
+      lastFailedCell: 0,
+      maxHistoryDepth: 0,
+      currentCell: 0,
+      continueHappened: 0,
     };
 
     const nextSeed =
@@ -738,14 +773,20 @@ export async function createWfcView(opts: WfcViewOpts): Promise<WfcView> {
   app.ticker.add(() => {
     updateWorldTransform();
 
-    const DRAW_BUDGET = Math.max(1, Number(speed.value) | 0);
+    const DRAW_BUDGET = forceFlushDraw
+      ? Number.POSITIVE_INFINITY
+      : Math.max(1, Number(speed.value) | 0);
 
     lastTickDrawn = 0;
     while (lastTickDrawn < DRAW_BUDGET && pendingDraws.length > 0) {
       const it = pendingDraws.shift()!;
-      collapsedGrid[it.cell] = it.tile; // record for click-debugging
+      collapsedGrid[it.cell] = it.tile;
       drawCollapsedTile(it.cell, it.tile);
       lastTickDrawn++;
+    }
+
+    if (forceFlushDraw && pendingDraws.length === 0) {
+      forceFlushDraw = false;
     }
 
     const now = performance.now();
@@ -794,7 +835,23 @@ export async function createWfcView(opts: WfcViewOpts): Promise<WfcView> {
       `Draw: +${lastTickDrawn} / tick | ${emaDrawPerSec.toFixed(
         0
       )} / sec | Zoom: ${zoom.toFixed(2)}\n` +
-      `${activityLine(uiState)}`;
+      `${activityLine(uiState)} \n` +
+      (uiState.mode === "error" && uiState.errorMessage
+        ? `ERROR: ${uiState.errorMessage}\n`
+        : "") +
+      `Backtracks: ${liveDrain.backTrackCount.toLocaleString()}` +
+      (liveDrain.lastFailedCell !== 0
+        ? ` | Last failed cell: ${liveDrain.lastFailedCell}`
+        : "") +
+      (liveDrain.maxHistoryDepth !== 0
+        ? ` | Max history depth: ${liveDrain.maxHistoryDepth}`
+        : "") +
+      (liveDrain.currentCell !== 0
+        ? ` | Current cell: ${liveDrain.currentCell}`
+        : "") +
+      (liveDrain.continueHappened !== 0
+        ? ` | Continue happened: ${liveDrain.continueHappened}`
+        : "");
   });
 
   return {

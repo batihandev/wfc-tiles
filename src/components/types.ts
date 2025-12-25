@@ -50,6 +50,11 @@ export type WorkerProgress = {
   optionsRemovedSoFar: number; // total options eliminated in this drain
   cellsTouched: number; // number of cells whose domain actually changed
   maxEntropyDropInSingleCell: number; // max (beforeCount - afterCount) seen in any single changed
+  backTrackCount: number;
+  lastFailedCell: number;
+  maxHistoryDepth: number;
+  currentCell: number;
+  continueHappened: number;
 };
 
 export type WorkerState =
@@ -66,6 +71,7 @@ export type WorkerInMsg =
       gridW: number;
       gridH: number;
       opts: WfcStepperOptions;
+      targetPerChunk: number;
     }
   | { type: "run" }
   | { type: "pause" }

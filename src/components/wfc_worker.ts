@@ -27,7 +27,7 @@ let lastProgressPost = 0;
 const PROGRESS_POST_EVERY_MS = 100;
 
 // These are *chunk* boundaries. Pause is honored between chunks.
-const TARGET_PER_CHUNK = 1;
+let TARGET_PER_CHUNK = 1;
 
 type Diag = WorkerDiag;
 
@@ -149,6 +149,7 @@ self.onmessage = (e: MessageEvent<WorkerInMsg>) => {
   const msg = e.data;
 
   if (msg.type === "init") {
+    TARGET_PER_CHUNK = Number(msg.targetPerChunk) || 1;
     runGen++; // cancel in-flight loop
     running = false;
 
@@ -206,6 +207,7 @@ self.onmessage = (e: MessageEvent<WorkerInMsg>) => {
         batch.length = 0;
       } else if (ev.type === "done") {
         running = false;
+        // Send authoritative snapshot before/after done (either is fine; do before for UI determinism)
         post({ type: "done" });
         post({ type: "state", state: { mode: "done" } });
         break;
